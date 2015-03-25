@@ -1,0 +1,31 @@
+/********
+
+Siren Framework v3.6
+
+File Name: Responsive for Galleries
+
+File Purpose: Media query calls go here for galleries
+
+File Notes: 
+
+
+*********/
+
+
+@media only screen and (min-width: 500px)  {
+	/*-------------------------*\
+	  #Gallery-Images
+	\*-------------------------*/
+
+	.gallery-item {
+		width: $hundred/4;
+
+		&:nth-child(2n+1){
+			clear: none;
+		}
+
+		&:nth-child(4n+1){
+			clear: both;
+		}
+	}
+}

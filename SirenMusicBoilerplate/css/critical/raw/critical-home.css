@@ -1,0 +1,41 @@
+html{ font-family: proxima-nova, Arial, sans-serif; font-style: normal; font-weight: 400; }
+h1{ font-family: proxima-nova, Arial, sans-serif; font-style: normal; font-weight: 700; }
+html{ }
+body{ font-size: 1em; color: rgb(0, 0, 0); margin-top: 1em; margin-right: 1em; margin-bottom: 1em; margin-left: 1em; }
+ footer, header, main, nav, section{ display: block; }
+a{ text-decoration: none; color: rgb(175, 175, 175); }
+h1{ text-transform: uppercase; line-height: 1.5; }
+h1{ font-size: 2.369em; }
+ ul, li{ font-size: 1em; }
+.header{ text-align: center; margin-bottom: 1.5em; padding-top: 1em; padding-right: 1em; padding-bottom: 1em; padding-left: 1em; }
+.title{ margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; }
+.page_item{ list-style-type: none; list-style-position: initial; list-style-image: initial; margin-top: 1em; }
+.page_item a{ padding-top: 10px; padding-right: 0px; padding-bottom: 10px; padding-left: 0px; }
+.footer{ text-align: center; margin-top: 1.5em; padding-top: 1em; padding-right: 1em; padding-bottom: 1em; padding-left: 1em; }
+@media only all{
+html{ box-sizing: border-box; }
+*{ box-sizing: inherit; }
+body{ margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; }
+img{ max-width: 100%; }
+.header{ background-image: initial; background-attachment: initial; background-origin: initial; background-clip: initial; background-color: rgb(0, 0, 0); color: rgb(255, 255, 255); overflow-x: hidden; overflow-y: hidden; background-position: initial initial; background-repeat: initial initial; }
+.page_item{ margin-top: 0px; margin-right: 0px; margin-bottom: 0px; margin-left: 0px; }
+.page_item a{ color: rgb(255, 255, 255); display: block; }
+.footer{ background-image: initial; background-attachment: initial; background-origin: initial; background-clip: initial; background-color: rgb(0, 0, 0); color: rgb(255, 255, 255); background-position: initial initial; background-repeat: initial initial; }
+}
+@media only screen and (min-width: 700px){
+body{ font-size: 1.125em; }
+.title{ float: left; }
+.page_item{ display: inline-block; }
+.page_item a{ padding-top: 1em; padding-right: 1em; padding-bottom: 1em; padding-left: 1em; }
+}
+@media only screen and (min-width: 1200px){
+body{ font-size: 1.25em; }
+}
+@media print{
+*{ background-image: initial !important; background-attachment: initial !important; background-origin: initial !important; background-clip: initial !important; background-color: transparent !important; color: black !important; box-shadow: none !important; text-shadow: none !important; filter: none !important; background-position: initial initial !important; background-repeat: initial initial !important; }
+a{ text-decoration: underline; }
+a[href]::after{ content: ' (', attr(href), ')'; }
+ a[href^="#"]::after{ content: ''; }
+ img{ page-break-inside: avoid; }
+img{ max-width: 100% !important; }
+}

@@ -1,0 +1,33 @@
+/********
+
+Siren Framework v3.7
+
+File Name: Media Helpers and Utilities
+
+File Purpose: Classes that preform a specific reusable function related to media assets.
+
+File Notes: 
+	- Class names must have the prefix "h-" for helpers
+
+*********/
+
+/*-------------------------*\
+  #Videos
+\*-------------------------*/
+
+.h-ombed {
+	position: relative; 
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    max-width: 100%;
+    height: auto;
+
+    iframe, object, embed, video{
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+}

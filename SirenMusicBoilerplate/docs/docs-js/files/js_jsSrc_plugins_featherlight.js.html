@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>js/jsSrc/plugins/featherlight.js - Siren Core</title>
+    <link rel="stylesheet" href="http://yui.yahooapis.com/3.9.1/build/cssgrids/cssgrids-min.css">
+    <link rel="stylesheet" href="../assets/vendor/prettify/prettify-min.css">
+    <link rel="stylesheet" href="../assets/css/main.css" id="site_styles">
+    <link rel="shortcut icon" type="image/png" href="../assets/favicon.png">
+    <script src="http://yui.yahooapis.com/combo?3.9.1/build/yui/yui-min.js"></script>
+</head>
+<body class="yui3-skin-sam">
+
+<div id="doc">
+    <div id="hd" class="yui3-g header">
+        <div class="yui3-u-3-4">
+            
+                <h1><img src="../assets/css/logo.png" title="Siren Core"></h1>
+            
+        </div>
+        <div class="yui3-u-1-4 version">
+            <em>API Docs for: 0</em>
+        </div>
+    </div>
+    <div id="bd" class="yui3-g">
+
+        <div class="yui3-u-1-4">
+            <div id="docs-sidebar" class="sidebar apidocs">
+                <div id="api-list">
+    <h2 class="off-left">APIs</h2>
+    <div id="api-tabview" class="tabview">
+        <ul class="tabs">
+            <li><a href="#api-classes">Classes</a></li>
+            <li><a href="#api-modules">Modules</a></li>
+        </ul>
+
+        <div id="api-tabview-filter">
+            <input type="search" id="api-filter" placeholder="Type to filter APIs">
+        </div>
+
+        <div id="api-tabview-panel">
+            <ul id="api-classes" class="apis classes">
+            
+                <li><a href="../classes/fancyBox.html">fancyBox</a></li>
+            
+                <li><a href="../classes/navigationUI.html">navigationUI</a></li>
+            
+            </ul>
+
+            <ul id="api-modules" class="apis modules">
+            
+                <li><a href="../modules/Global.html">Global</a></li>
+            
+                <li><a href="../modules/Imagedisplay.html">Imagedisplay</a></li>
+            
+            </ul>
+        </div>
+    </div>
+</div>
+
+            </div>
+        </div>
+        <div class="yui3-u-3-4">
+                <div id="api-options">
+        Show:
+        <label for="api-show-inherited">
+            <input type="checkbox" id="api-show-inherited" checked>
+            Inherited
+        </label>
+
+        <label for="api-show-protected">
+            <input type="checkbox" id="api-show-protected">
+            Protected
+        </label>
+
+        <label for="api-show-private">
+            <input type="checkbox" id="api-show-private">
+            Private
+        </label>
+        <label for="api-show-deprecated">
+            <input type="checkbox" id="api-show-deprecated">
+            Deprecated
+        </label>
+
+    </div>
+
+
+            <div class="apidocs">
+                <div id="docs-main">
+                    <div class="content">
+                        <h1 class="file-heading">File: js/jsSrc/plugins/featherlight.js</h1>
+
+<div class="file">
+    <pre class="code prettyprint linenums">
+/**
+ * Featherlight - ultra slim jQuery lightbox
+ * Version 1.2.0 - http://noelboss.github.io/featherlight/
+ *
+ * Copyright 2015, Noël Raoul Bossart (http://www.noelboss.com)
+ * MIT Licensed.
+**/
+
+(function($) {
+	&quot;use strict&quot;;
+
+	if(&#x27;undefined&#x27; === typeof $) {
+		if(&#x27;console&#x27; in window){ window.console.info(&#x27;Too much lightness, Featherlight needs jQuery.&#x27;); }
+		return;
+	}
+
+	/* Featherlight is exported as $.featherlight.
+	   It is a function used to open a featherlight lightbox.
+
+	   [tech]
+	   Featherlight uses prototype inheritance.
+	   Each opened lightbox will have a corresponding object.
+	   That object may have some attributes that override the
+	   prototype&#x27;s.
+	   Extensions created with Featherlight.extend will have their
+	   own prototype that inherits from Featherlight&#x27;s prototype,
+	   thus attributes can be overriden either at the object level,
+	   or at the extension level.
+	   To create callbacks that chain themselves instead of overriding,
+	   use chainCallbacks.
+	   For those familiar with CoffeeScript, this correspond to
+	   Featherlight being a class and the Gallery being a class
+	   extending Featherlight.
+	   The chainCallbacks is used since we don&#x27;t have access to
+	   CoffeeScript&#x27;s &#x60;super&#x60;.
+	*/
+
+	function Featherlight($content, config) {
+		if(this instanceof Featherlight) {  /* called with new */
+			this.id = Featherlight.id++;
+			this.setup($content, config);
+			this.chainCallbacks(Featherlight._callbackChain);
+		} else {
+			var fl = new Featherlight($content, config);
+			fl.open();
+			return fl;
+		}
+	}
+
+	var opened = [],
+		pruneOpened = function(remove) {
+			opened = $.grep(opened, function(fl) {
+				return fl !== remove &amp;&amp; fl.$instance.closest(&#x27;body&#x27;).length &gt; 0;
+			} );
+			return opened;
+		};
+
+	// structure({iframeMinHeight: 44, foo: 0}, &#x27;iframe&#x27;)
+	//   #=&gt; {min-height: 44}
+	var structure = function(obj, prefix) {
+		var result = {},
+			regex = new RegExp(&#x27;^&#x27; + prefix + &#x27;([A-Z])(.*)&#x27;);
+		for (var key in obj) {
+			var match = key.match(regex);
+			if (match) {
+				var dasherized = (match[1] + match[2].replace(/([A-Z])/g, &#x27;-$1&#x27;)).toLowerCase();
+				result[dasherized] = obj[key];
+			}
+		}
+		return result;
+	};
+
+	/* document wide key handler */
+	var eventMap = { keyup: &#x27;onKeyUp&#x27;, resize: &#x27;onResize&#x27; };
+
+	var globalEventHandler = function(event) {
+		$.each(Featherlight.opened().reverse(), function() {
+			if (!event.isDefaultPrevented()) {
+				if (false === this[eventMap[event.type]](event)) {
+					event.preventDefault(); event.stopPropagation(); return false;
+			  }
+			}
+		});
+	};
+
+	var toggleGlobalEvents = function(set) {
+			if(set !== Featherlight._globalHandlerInstalled) {
+				Featherlight._globalHandlerInstalled = set;
+				var events = $.map(eventMap, function(_, name) { return name+&#x27;.&#x27;+Featherlight.prototype.namespace; } ).join(&#x27; &#x27;);
+				$(window)[set ? &#x27;on&#x27; : &#x27;off&#x27;](events, globalEventHandler);
+			}
+		};
+
+	Featherlight.prototype = {
+		constructor: Featherlight,
+		/*** defaults ***/
+		/* extend featherlight with defaults and methods */
+		namespace:    &#x27;featherlight&#x27;,         /* Name of the events and css class prefix */
+		targetAttr:   &#x27;data-featherlight&#x27;,    /* Attribute of the triggered element that contains the selector to the lightbox content */
+		variant:      null,                   /* Class that will be added to change look of the lightbox */
+		resetCss:     false,                  /* Reset all css */
+		background:   null,                   /* Custom DOM for the background, wrapper and the closebutton */
+		openTrigger:  &#x27;click&#x27;,                /* Event that triggers the lightbox */
+		closeTrigger: &#x27;click&#x27;,                /* Event that triggers the closing of the lightbox */
+		filter:       null,                   /* Selector to filter events. Think $(...).on(&#x27;click&#x27;, filter, eventHandler) */
+		root:         &#x27;body&#x27;,                 /* Where to append featherlights */
+		openSpeed:    250,                    /* Duration of opening animation */
+		closeSpeed:   250,                    /* Duration of closing animation */
+		closeOnClick: &#x27;background&#x27;,           /* Close lightbox on click (&#x27;background&#x27;, &#x27;anywhere&#x27; or false) */
+		closeOnEsc:   true,                   /* Close lightbox when pressing esc */
+		closeIcon:    &#x27;&amp;#10005;&#x27;,             /* Close icon */
+		loading:      &#x27;&#x27;,                     /* Content to show while initial content is loading */
+		otherClose:   null,                   /* Selector for alternate close buttons (e.g. &quot;a.close&quot;) */
+		beforeOpen:   $.noop,                 /* Called before open. can return false to prevent opening of lightbox. Gets event as parameter, this contains all data */
+		beforeContent: $.noop,                /* Called when content is loaded. Gets event as parameter, this contains all data */
+		beforeClose:  $.noop,                 /* Called before close. can return false to prevent opening of lightbox. Gets event as parameter, this contains all data */
+		afterOpen:    $.noop,                 /* Called after open. Gets event as parameter, this contains all data */
+		afterContent: $.noop,                 /* Called after content is ready and has been set. Gets event as parameter, this contains all data */
+		afterClose:   $.noop,                 /* Called after close. Gets event as parameter, this contains all data */
+		onKeyUp:      $.noop,                 /* Called on key down for the frontmost featherlight */
+		onResize:     $.noop,                 /* Called after new content and when a window is resized */
+		type:         null,                   /* Specify type of lightbox. If unset, it will check for the targetAttrs value. */
+		contentFilters: [&#x27;jquery&#x27;, &#x27;image&#x27;, &#x27;html&#x27;, &#x27;ajax&#x27;, &#x27;iframe&#x27;, &#x27;text&#x27;], /* List of content filters to use to determine the content */
+
+		/*** methods ***/
+		/* setup iterates over a single instance of featherlight and prepares the background and binds the events */
+		setup: function(target, config){
+			/* all arguments are optional */
+			if (typeof target === &#x27;object&#x27; &amp;&amp; target instanceof $ === false &amp;&amp; !config) {
+				config = target;
+				target = undefined;
+			}
+
+			var self = $.extend(this, config, {target: target}),
+				css = !self.resetCss ? self.namespace : self.namespace+&#x27;-reset&#x27;, /* by adding -reset to the classname, we reset all the default css */
+				$background = $(self.background || [
+					&#x27;&lt;div class=&quot;&#x27;+css+&#x27;-loading &#x27;+css+&#x27;&quot;&gt;&#x27;,
+						&#x27;&lt;div class=&quot;&#x27;+css+&#x27;-content&quot;&gt;&#x27;,
+							&#x27;&lt;span class=&quot;&#x27;+css+&#x27;-close-icon &#x27;+ self.namespace + &#x27;-close&quot;&gt;&#x27;,
+								self.closeIcon,
+							&#x27;&lt;/span&gt;&#x27;,
+							&#x27;&lt;div class=&quot;&#x27;+self.namespace+&#x27;-inner&quot;&gt;&#x27; + self.loading + &#x27;&lt;/div&gt;&#x27;,
+						&#x27;&lt;/div&gt;&#x27;,
+					&#x27;&lt;/div&gt;&#x27;].join(&#x27;&#x27;)),
+				closeButtonSelector = &#x27;.&#x27;+self.namespace+&#x27;-close&#x27; + (self.otherClose ? &#x27;,&#x27; + self.otherClose : &#x27;&#x27;);
+
+			self.$instance = $background.clone().addClass(self.variant); /* clone DOM for the background, wrapper and the close button */
+
+			/* close when click on background/anywhere/null or closebox */
+			self.$instance.on(self.closeTrigger+&#x27;.&#x27;+self.namespace, function(event) {
+				var $target = $(event.target);
+				if( (&#x27;background&#x27; === self.closeOnClick  &amp;&amp; $target.is(&#x27;.&#x27;+self.namespace))
+					|| &#x27;anywhere&#x27; === self.closeOnClick
+					|| $target.closest(closeButtonSelector).length ){
+					event.preventDefault();
+					self.close();
+				}
+			});
+
+			return this;
+		},
+
+		/* this method prepares the content and converts it into a jQuery object or a promise */
+		getContent: function(){
+			var self = this,
+				filters = this.constructor.contentFilters,
+				readTargetAttr = function(name){ return self.$currentTarget &amp;&amp; self.$currentTarget.attr(name); },
+				targetValue = readTargetAttr(self.targetAttr),
+				data = self.target || targetValue || &#x27;&#x27;;
+
+			/* Find which filter applies */
+			var filter = filters[self.type]; /* check explicit type like {type: &#x27;image&#x27;} */
+
+			/* check explicit type like data-featherlight=&quot;image&quot; */
+			if(!filter &amp;&amp; data in filters) {
+				filter = filters[data];
+				data = self.target &amp;&amp; targetValue;
+			}
+			data = data || readTargetAttr(&#x27;href&#x27;) || &#x27;&#x27;;
+
+			/* check explicity type &amp; content like {image: &#x27;photo.jpg&#x27;} */
+			if(!filter) {
+				for(var filterName in filters) {
+					if(self[filterName]) {
+						filter = filters[filterName];
+						data = self[filterName];
+					}
+				}
+			}
+
+			/* otherwise it&#x27;s implicit, run checks */
+			if(!filter) {
+				var target = data;
+				data = null;
+				$.each(self.contentFilters, function() {
+					filter = filters[this];
+					if(filter.test)  {
+						data = filter.test(target);
+					}
+					if(!data &amp;&amp; filter.regex &amp;&amp; target.match &amp;&amp; target.match(filter.regex)) {
+						data = target;
+					}
+					return !data;
+				});
+				if(!data) {
+					if(&#x27;console&#x27; in window){ window.console.error(&#x27;Featherlight: no content filter found &#x27; + (target ? &#x27; for &quot;&#x27; + target + &#x27;&quot;&#x27; : &#x27; (no target specified)&#x27;)); }
+					return false;
+				}
+			}
+			/* Process it */
+			return filter.process.call(self, data);
+		},
+
+		/* sets the content of $instance to $content */
+		setContent: function($content){
+			var self = this;
+			/* we need a special class for the iframe */
+			if($content.is(&#x27;iframe&#x27;) || $(&#x27;iframe&#x27;, $content).length &gt; 0){
+				self.$instance.addClass(self.namespace+&#x27;-iframe&#x27;);
+			}
+
+			self.$instance.removeClass(self.namespace+&#x27;-loading&#x27;);
+
+			/* replace content by appending to existing one before it is removed
+			   this insures that featherlight-inner remain at the same relative
+				 position to any other items added to featherlight-content */
+			self.$instance.find(&#x27;.&#x27;+self.namespace+&#x27;-inner&#x27;)
+				.slice(1).remove().end()			/* In the unexpected event where there are many inner elements, remove all but the first one */
+				.replaceWith($.contains(self.$instance[0], $content[0]) ? &#x27;&#x27; : $content);
+
+			self.$content = $content.addClass(self.namespace+&#x27;-inner&#x27;);
+
+			return self;
+		},
+
+		/* opens the lightbox. &quot;this&quot; contains $instance with the lightbox, and with the config */
+		open: function(event){
+			var self = this;
+			if((!event || !event.isDefaultPrevented())
+				&amp;&amp; self.beforeOpen(event) !== false) {
+
+				if(event){
+					event.preventDefault();
+				}
+				var $content = self.getContent();
+
+				if($content){
+					opened.push(self);
+
+					toggleGlobalEvents(true);
+
+					self.$instance.appendTo(self.root).fadeIn(self.openSpeed);
+					self.beforeContent(event);
+
+					/* Set content and show */
+					$.when($content).always(function($content){
+						self.setContent($content);
+						self.afterContent(event);
+						/* Call afterOpen after fadeIn is done */
+						$.when(self.$instance.promise()).done(function(){
+							self.afterOpen(event);
+						});
+					});
+					return self;
+				}
+			}
+			return false;
+		},
+
+		/* closes the lightbox. &quot;this&quot; contains $instance with the lightbox, and with the config */
+		close: function(event){
+			var self = this;
+			if(self.beforeClose(event) === false) {
+				return false;
+			}
+
+			if (0 === pruneOpened(self).length) {
+				toggleGlobalEvents(false);
+			}
+
+			self.$instance.fadeOut(self.closeSpeed,function(){
+				self.$instance.detach();
+				self.afterClose(event);
+			});
+		},
+
+		/* Utility function to chain callbacks
+		   [Warning: guru-level]
+		   Used be extensions that want to let users specify callbacks but
+		   also need themselves to use the callbacks.
+		   The argument &#x27;chain&#x27; has callback names as keys and function(super, event)
+		   as values. That function is meant to call &#x60;super&#x60; at some point.
+		*/
+		chainCallbacks: function(chain) {
+			for (var name in chain) {
+				this[name] = $.proxy(chain[name], this, $.proxy(this[name], this));
+			}
+		}
+	};
+
+	$.extend(Featherlight, {
+		id: 0,                                    /* Used to id single featherlight instances */
+		autoBind:       &#x27;[data-featherlight]&#x27;,    /* Will automatically bind elements matching this selector. Clear or set before onReady */
+		defaults:       Featherlight.prototype,   /* You can access and override all defaults using $.featherlight.defaults, which is just a synonym for $.featherlight.prototype */
+		/* Contains the logic to determine content */
+		contentFilters: {
+			jquery: {
+				regex: /^[#.]\w/,         /* Anything that starts with a class name or identifiers */
+				test: function(elem)    { return elem instanceof $ &amp;&amp; elem; },
+				process: function(elem) { return $(elem).clone(true); }
+			},
+			image: {
+				regex: /\.(png|jpg|jpeg|gif|tiff|bmp)(\?\S*)?$/i,
+				process: function(url)  {
+					var self = this,
+						deferred = $.Deferred(),
+						img = new Image(),
+						$img = $(&#x27;&lt;img src=&quot;&#x27;+url+&#x27;&quot; alt=&quot;&quot; class=&quot;&#x27;+self.namespace+&#x27;-image&quot; /&gt;&#x27;);
+					img.onload  = function() {
+						/* Store naturalWidth &amp; height for IE8 */
+						$img.naturalWidth = img.width; $img.naturalHeight = img.height;
+						deferred.resolve( $img );
+					};
+					img.onerror = function() { deferred.reject($img); };
+					img.src = url;
+					return deferred.promise();
+				}
+			},
+			html: {
+				regex: /^\s*&lt;[\w!][^&lt;]*&gt;/, /* Anything that starts with some kind of valid tag */
+				process: function(html) { return $(html); }
+			},
+			ajax: {
+				regex: /./,            /* At this point, any content is assumed to be an URL */
+				process: function(url)  {
+					var self = this,
+						deferred = $.Deferred();
+					/* we are using load so one can specify a target with: url.html #targetelement */
+					var $container = $(&#x27;&lt;div&gt;&lt;/div&gt;&#x27;).load(url, function(response, status){
+						if ( status !== &quot;error&quot; ) {
+							deferred.resolve($container.contents());
+						}
+						deferred.fail();
+					});
+					return deferred.promise();
+				}
+			},
+			iframe: {
+				process: function(url) {
+					var deferred = new $.Deferred();
+					var $content = $(&#x27;&lt;iframe/&gt;&#x27;)
+						.hide()
+						.attr(&#x27;src&#x27;, url)
+						.css(structure(this, &#x27;iframe&#x27;))
+						.on(&#x27;load&#x27;, function() { deferred.resolve($content.show()); })
+						// We can&#x27;t move an &lt;iframe&gt; and avoid reloading it,
+						// so let&#x27;s put it in place ourselves right now:
+						.appendTo(this.$instance.find(&#x27;.&#x27; + this.namespace + &#x27;-content&#x27;));
+					return deferred.promise();
+				}
+			},
+			text: {
+				process: function(text) { return $(&#x27;&lt;div&gt;&#x27;, {text: text}); }
+			}
+		},
+
+		functionAttributes: [&#x27;beforeOpen&#x27;, &#x27;afterOpen&#x27;, &#x27;beforeContent&#x27;, &#x27;afterContent&#x27;, &#x27;beforeClose&#x27;, &#x27;afterClose&#x27;],
+
+		/*** class methods ***/
+		/* read element&#x27;s attributes starting with data-featherlight- */
+		readElementConfig: function(element) {
+			var Klass = this,
+				config = {};
+			if (element &amp;&amp; element.attributes) {
+					$.each(element.attributes, function(){
+					var match = this.name.match(/^data-featherlight-(.*)/);
+					if (match) {
+						var val = this.value,
+							name = $.camelCase(match[1]);
+						if ($.inArray(name, Klass.functionAttributes) &gt;= 0) {  /* jshint -W054 */
+							val = new Function(val);                           /* jshint +W054 */
+						} else {
+							try { val = $.parseJSON(val); }
+							catch(e) {}
+						}
+						config[name] = val;
+					}
+				});
+			}
+			return config;
+		},
+
+		/* Used to create a Featherlight extension
+		   [Warning: guru-level]
+		   Creates the extension&#x27;s prototype that in turn
+		   inherits Featherlight&#x27;s prototype.
+		   Could be used to extend an extension too...
+		   This is pretty high level wizardy, it comes pretty much straight
+		   from CoffeeScript and won&#x27;t teach you anything about Featherlight
+		   as it&#x27;s not really specific to this library.
+		   My suggestion: move along and keep your sanity.
+		*/
+		extend: function(child, defaults) {
+			/* Setup class hierarchy, adapted from CoffeeScript */
+			var Ctor = function(){ this.constructor = child; };
+			Ctor.prototype = this.prototype;
+			child.prototype = new Ctor();
+			child.__super__ = this.prototype;
+			/* Copy class methods &amp; attributes */
+			$.extend(child, this, defaults);
+			child.defaults = child.prototype;
+			return child;
+		},
+
+		attach: function($source, $content, config) {
+			var Klass = this;
+			if (typeof $content === &#x27;object&#x27; &amp;&amp; $content instanceof $ === false &amp;&amp; !config) {
+				config = $content;
+				$content = undefined;
+			}
+			/* make a copy */
+			config = $.extend({}, config);
+
+			/* Only for openTrigger and namespace... */
+			var tempConfig = $.extend({}, Klass.defaults, Klass.readElementConfig($source[0]), config);
+
+			$source.on(tempConfig.openTrigger+&#x27;.&#x27;+tempConfig.namespace, tempConfig.filter, function(event) {
+				/* ... since we might as well compute the config on the actual target */
+				var elemConfig = $.extend({$source: $source, $currentTarget: $(this)}, Klass.readElementConfig($source[0]), Klass.readElementConfig(this), config);
+				new Klass($content, elemConfig).open(event);
+			});
+			return $source;
+		},
+
+		current: function() {
+			var all = this.opened();
+			return all[all.length - 1] || null;
+		},
+
+		opened: function() {
+			var klass = this;
+			pruneOpened();
+			return $.grep(opened, function(fl) { return fl instanceof klass; } );
+		},
+
+		close: function() {
+			var cur = this.current();
+			if(cur) { cur.close(); }
+		},
+
+		/* Does the auto binding on startup.
+		   Meant only to be used by Featherlight and its extensions
+		*/
+		_onReady: function() {
+			var Klass = this;
+			if(Klass.autoBind){
+				/* First, bind click on document, so it will work for items added dynamically */
+				Klass.attach($(document), {filter: Klass.autoBind});
+				/* Auto bound elements with attr-featherlight-filter won&#x27;t work
+				   (since we already used it to bind on document), so bind these
+				   directly. We can&#x27;t easily support dynamically added element with filters */
+				$(Klass.autoBind).filter(&#x27;[data-featherlight-filter]&#x27;).each(function(){
+					Klass.attach($(this));
+				});
+			}
+		},
+
+		/* Featherlight uses the onKeyUp callback to intercept the escape key.
+		   Private to Featherlight.
+		*/
+		_callbackChain: {
+			onKeyUp: function(_super, event){
+				if(27 === event.keyCode) {
+					if (this.closeOnEsc) {
+						this.$instance.find(&#x27;.&#x27;+this.namespace+&#x27;-close:first&#x27;).click();
+					}
+					return false;
+				} else {
+					return _super(event);
+				}
+			},
+
+			onResize: function(_super, event){
+				if (this.$content.naturalWidth) {
+					var w = this.$content.naturalWidth, h = this.$content.naturalHeight;
+					/* Reset apparent image size first so container grows */
+					this.$content.css(&#x27;width&#x27;, &#x27;&#x27;).css(&#x27;height&#x27;, &#x27;&#x27;);
+					/* Calculate the worst ratio so that dimensions fit */
+					var ratio = Math.max(
+						w  / parseInt(this.$content.parent().css(&#x27;width&#x27;),10),
+						h / parseInt(this.$content.parent().css(&#x27;height&#x27;),10));
+					/* Resize content */
+					if (ratio &gt; 1) {
+						this.$content.css(&#x27;width&#x27;, &#x27;&#x27; + w / ratio + &#x27;px&#x27;).css(&#x27;height&#x27;, &#x27;&#x27; + h / ratio + &#x27;px&#x27;);
+					}
+				}
+				return _super(event);
+			},
+
+			afterContent: function(_super, event){
+				var r = _super(event);
+				this.onResize(event);
+				return r;
+			}
+		}
+	});
+
+	$.featherlight = Featherlight;
+
+	/* bind jQuery elements to trigger featherlight */
+	$.fn.featherlight = function($content, config) {
+		return Featherlight.attach(this, $content, config);
+	};
+
+	/* bind featherlight on ready if config autoBind is set */
+	$(document).ready(function(){ Featherlight._onReady(); });
+}(jQuery));
+
+    </pre>
+</div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../assets/vendor/prettify/prettify-min.js"></script>
+<script>prettyPrint();</script>
+<script src="../assets/js/yui-prettify.js"></script>
+<script src="../assets/../api.js"></script>
+<script src="../assets/js/api-filter.js"></script>
+<script src="../assets/js/api-list.js"></script>
+<script src="../assets/js/api-search.js"></script>
+<script src="../assets/js/apidocs.js"></script>
+</body>
+</html>

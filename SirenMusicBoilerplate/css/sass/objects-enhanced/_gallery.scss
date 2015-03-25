@@ -1,0 +1,43 @@
+/********
+
+Siren Framework v3.7
+
+File Name: Galleries
+
+File Purpose: Classes for image galleries
+
+File Notes: 
+
+
+*********/
+
+/*-------------------------*\
+  #Gallery-Images
+\*-------------------------*/
+
+.post-gallery_summary {
+	
+
+	img {
+		width: 100%!important;
+		max-width: 150px;
+		height: auto!important;
+	}
+
+}
+
+.gallery{
+	overflow: hidden;
+	clear: both;
+}
+
+.gallery-item {
+	text-align: center;
+	padding: 0.5em;
+	float: left;
+	width: $hundred/2;
+
+	&:nth-child(2n+1){
+		clear: both;
+	}
+}

@@ -1,0 +1,37 @@
+/********
+
+Siren Framework v3.6
+
+File Name: Responsive Layout
+
+File Purpose: Responsive Layout
+
+File Notes: 
+	- Class names must have the prefix "l-" for layout
+
+*********/	
+
+@media only screen and (min-width: 700px)  {
+
+	/*-------------------------*\
+		#Layout-Columns
+	\*-------------------------*/
+
+	.l-col_hlf, .l-col_thrd, .l-col_frth{
+		padding: 0 0.5em;
+		float: left;
+	}
+
+	.l-col_hlf{
+		width: 50%;
+	}
+
+	.l-col_thrd{
+		width: $hundred/3;
+	}
+
+	.l-col_frth{
+		width: $hundred/4;
+	}
+
+}
